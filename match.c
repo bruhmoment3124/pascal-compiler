@@ -7,11 +7,11 @@
 extern char *file; /* the string that the file was converted into */
 extern char trace;
 
-static unsigned long int indent = 0; /* used to format traced output */
-
 /* 
 	The below functions are for the parsing stage of the compiler.
 */
+
+static unsigned long int indent = 0; /* used to format traced output */
 
 /* boilerplate sytnax_error, will change later */
 static void syntax_error(char *sym, token temp)
