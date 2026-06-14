@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	
 	if(trace) printf("trace output:\n\n");
 	
-	program();
+	expression();
 	expect_sym("~");
 	
 	free(file);

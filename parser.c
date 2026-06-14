@@ -50,6 +50,33 @@ void variable(void)
 {
 	prologue("variable");
 	
+	expect_type(identifier);
+	
+	while(match_sym("[") || match_sym(".") || match_sym("^"))
+	{
+		if(match_sym("["))
+		{
+			expect_sym("[");
+			
+			expression();
+			
+			while(match_sym(","))
+			{
+				expect_sym(",");
+				expression();
+			}
+			
+			expect_sym("]");
+		} else if(match_sym("."))
+		{
+			expect_sym(".");
+			expect_type(identifier);
+		} else
+		{
+			expect_sym("^");
+		}
+	}
+	
 	epilogue();
 }
 
@@ -445,7 +472,6 @@ void ordinal_type(void)
 	
 	epilogue();
 }
-
 
 void data_type(void)
 {
