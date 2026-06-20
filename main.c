@@ -4,9 +4,11 @@
 #include "token.h"
 #include "match.h"
 #include "parser.h"
+#include "symtb.h"
 
 char *file = NULL; /* string containing input symbols to scanner */
 char trace = 0; /* trace parsing? */
+char symtb_trace = 0; /* print all found symbol tables */
 
 /* read file into string, with ~ as eof */
 void file2str(FILE *source)
@@ -74,6 +76,10 @@ int main(int argc, char *argv[])
 					case 't':
 						trace = 1;
 					break;
+					
+					case 'l':
+						symtb_trace = 1;
+					break;
 				}
 			} else
 			{
@@ -87,6 +93,10 @@ int main(int argc, char *argv[])
 	
 	expression();
 	expect_sym("~");
+	printf("\n");
+	
+	if(symtb_trace) printf("symbol table trace:\n\n");
+	trace_symbols();
 	
 	free(file);
 	fclose(source);

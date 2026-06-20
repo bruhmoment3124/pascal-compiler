@@ -35,8 +35,8 @@ void prologue(char *str)
 	if(trace)
 	{
 		unsigned long int i;
-		for(i = 0; i < indent; i++) printf("  ");
-		printf("%s (\n", str);
+		for(i = 0; i < indent; i++) printf("| ");
+		printf("%s {\n", str);
 		indent++;
 	}
 }
@@ -47,8 +47,8 @@ void epilogue(void)
 	{
 		unsigned long int i;
 		indent--;
-		for(i = 0; i < indent; i++) printf("  ");
-		printf(")\n");
+		for(i = 0; i < indent; i++) printf("| ");
+		printf("}\n");
 	}
 }
 
@@ -93,8 +93,7 @@ void expect_sym(char *sym)
 	if(trace)
 	{
 		unsigned long int i;
-		for(i = 0; i < indent; i++) printf("  ");
-		
+		for(i = 0; i < indent; i++) printf("| ");	
 		printf("expect (%s)\n", sym);
 	}
 	
@@ -118,8 +117,8 @@ void expect_type(type t)
 	if(trace)
 	{
 		unsigned long int i;
-		for(i = 0; i < indent; i++) printf("  ");
-		
+		for(i = 0; i < indent; i++) printf("| ");
+
 		printf("expect (");
 		prt_type(temp);
 		printf(")\n");
@@ -137,7 +136,7 @@ void advance_sym(void)
 	if(trace)
 	{
 		unsigned long int i;
-		for(i = 0; i < indent; i++) printf("  ");
+		for(i = 0; i < indent; i++) printf("| ");
 		
 		printf("advance (");
 		prt_sym(temp);
