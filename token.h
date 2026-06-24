@@ -13,7 +13,8 @@ typedef enum
 
 typedef struct
 {
-	unsigned long int start, end, lines; /* symbol components and number of lines */
+	char *sym;
+	unsigned long int length, lines; /* symbol length and number of lines */
 	type type;
 } token;
 

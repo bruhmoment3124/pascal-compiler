@@ -1,27 +1,40 @@
 
 typedef enum
 {
-    var,
-    id_type
+	idt_const,
+	idt_type,
+	idt_variable,
+	idt_field,
+	idt_proc,
+	idt_func
 } ident_type;
 
 typedef struct
 {
-    char *sym;
-    ident_type type;
+	char *sym;
+	unsigned long int length;
+	ident_type type;
 } entry;
 
 typedef struct node
 {
-    entry *entry;
-    unsigned long int num_of_entry;
-    long int level;
-    struct node *next;
+	entry *entry;
+	unsigned long int num_of_entry;
+	long int level;
+	struct node *next;
 } node;
 
 void push_tb(void);
 void pop_tb(void);
 
-void create_entry(char *, ident_type);
+void create_entry(token, ident_type);
+
+/*
+
+for later:
+
+int search_sym(char *);
+
+*/
 
 void trace_symbols(void);

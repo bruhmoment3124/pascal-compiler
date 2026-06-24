@@ -3,6 +3,7 @@
 #include "token.h"
 #include "match.h"
 #include "parser.h"
+#include "symtb.h"
 
 /*
 	Below is the recursive descent parser.
@@ -26,7 +27,7 @@ void constant(void)
 		   match_type(unum) || 
 	       match_type(uint))
 		{
-			advance_sym();
+			expect_type(get_tok(stay).type);
 		} else
 		{
 			/* replace with standard syntax error function */
@@ -46,178 +47,14 @@ void constant(void)
 	epilogue();
 }
 
-void variable(void)
-{
-	prologue("variable");
-	
-	expect_type(identifier);
-	
-	while(match_sym("[") || match_sym(".") || match_sym("^"))
-	{
-		if(match_sym("["))
-		{
-			expect_sym("[");
-			
-			expression();
-			
-			while(match_sym(","))
-			{
-				expect_sym(",");
-				expression();
-			}
-			
-			expect_sym("]");
-		} else if(match_sym("."))
-		{
-			expect_sym(".");
-			expect_type(identifier);
-		} else
-		{
-			expect_sym("^");
-		}
-	}
-	
-	epilogue();
-}
-
-/* factor will be difficult, because it relies on type information */
-void factor(void)
-{
-	prologue("factor");
-	
-	/* unsigned constant needs to be implemented */
-	
-	/* some work will have to be done to make LL(1) */
-	if(match_type(identifier))
-	{
-		variable();
-	} else if(match_sym("("))
-	{
-		expect_sym("(");
-		expression();
-		expect_sym(")");
-	} else if(match_sym("not"))
-	{
-		expect_sym("not");
-		factor();
-	} else if(match_sym("["))
-	{
-		expect_sym("[");
-		
-		if(match_sym("]"))
-		{
-			expect_sym("]");
-		} else
-		{
-			expression();
-			
-			if(match_sym(".."))
-			{
-				expect_sym("..");
-				expression();
-			}
-			
-			while(match_sym(","))
-			{
-				expect_sym(",");
-				
-				expression();
-			
-				if(match_sym(".."))
-				{
-					expect_sym("..");
-					expression();
-				}
-			}
-			
-			expect_sym("]");
-		}
-	} else if(match_type(unum) || match_type(uint))
-	{
-		expect_type(get_tok(stay).type);
-	} else
-	{
-		/* replace with standard syntax error function */
-		printf("ERROR!\n");
-		exit(-1);
-	}
-	
-	epilogue();
-}
-
-void term(void)
-{
-	prologue("term");
-	
-	factor();
-	
-	while(match_sym("*") ||
-		  match_sym("/") ||
-		  match_sym("div") ||
-		  match_sym("mod") ||
-		  match_sym("and"))
-	{
-		advance_sym();
-		factor();
-	}
-	
-	epilogue();
-}
-
-void simple_expression(void)
-{
-	prologue("simple_expression");
-	
-	if(match_sym("+") || match_sym("+"))
-		advance_sym();
-	
-	term();
-	
-	while(match_sym("+") ||
-		  match_sym("-") ||
-		  match_sym("or"))
-	{
-		advance_sym();
-		term();
-	}
-	
-	epilogue();
-}
-
-void expression(void)
-{
-	prologue("expression");
-	
-	simple_expression();
-	
-	if(match_sym("=") ||
-	   match_sym("<") ||
-	   match_sym(">") ||
-	   match_sym("<>") ||
-	   match_sym("<=") ||
-	   match_sym(">=") ||
-	   match_sym("in"))
-	{
-		advance_sym();
-		simple_expression();
-	}
-	
-	epilogue();
-}
-
-void write_param_list(void)
-{
-	prologue("write_param_list");
-	
-	epilogue();
-}
-
 void index_type_spec(void)
 {
 	prologue("index_type_spec");
 	
+	create_entry(get_tok(stay), idt_variable);
 	expect_type(identifier);
 	expect_sym("..");
+	create_entry(get_tok(stay), idt_variable);
 	expect_type(identifier);
 	expect_sym(":");
 	
@@ -286,10 +123,14 @@ void formal_param_list(void)
 	{
 		expect_sym("var");
 		
+		create_entry(get_tok(stay), idt_variable);
 		expect_type(identifier);
+		
 		while(match_sym(","))
 		{
-			expect_sym(",");
+			expect_sym(",");		
+			
+			create_entry(get_tok(stay), idt_variable);
 			expect_type(identifier);
 		}
 		
@@ -309,10 +150,14 @@ void formal_param_list(void)
 		}
 	} else if(match_type(identifier))
 	{
+		create_entry(get_tok(stay), idt_variable);
 		expect_type(identifier);
+		
 		while(match_sym(","))
 		{
 			expect_sym(",");
+			
+			create_entry(get_tok(stay), idt_variable);
 			expect_type(identifier);
 		}
 		
@@ -348,10 +193,14 @@ void formal_param_list(void)
 		{
 			expect_sym("var");
 			
+			create_entry(get_tok(stay), idt_variable);
 			expect_type(identifier);
+			
 			while(match_sym(","))
 			{
 				expect_sym(",");
+				
+				create_entry(get_tok(stay), idt_variable);
 				expect_type(identifier);
 			}
 			
@@ -371,10 +220,14 @@ void formal_param_list(void)
 			}
 		} else if(match_type(identifier))
 		{
+			create_entry(get_tok(stay), idt_variable);
 			expect_type(identifier);
+			
 			while(match_sym(","))
 			{
 				expect_sym(",");
+				
+				create_entry(get_tok(stay), idt_variable);
 				expect_type(identifier);
 			}
 			
@@ -416,14 +269,22 @@ void proc_or_func_head(void)
 	if(match_sym("procedure"))
 	{
 		expect_sym("procedure");
+		
+		create_entry(get_tok(stay), idt_proc);
 		expect_type(identifier);
+		
+		push_tb();
 		
 		if(match_sym("("))
 			formal_param_list();
 	} else if(match_sym("function"))
 	{
 		expect_sym("function");
+		
+		create_entry(get_tok(stay), idt_func);
 		expect_type(identifier);
+		
+		push_tb();
 		
 		if(match_sym("("))
 			formal_param_list();
@@ -443,7 +304,7 @@ void proc_or_func_head(void)
 	epilogue();
 }
 
-/* ALMOST DONE, NEED TO ENSURE VERIFY TYPE OF IDENTIFIER */
+/* ALMOST DONE, NEED TO VERIFY TYPE OF IDENTIFIER */
 void ordinal_type(void)
 {
 	prologue("ordinal_type");
@@ -519,7 +380,7 @@ void data_type(void)
 		} else
 		{
 			expect_sym("record");
-			field_list();
+			field_list();		
 			expect_sym("end");
 		}
 	} else
@@ -534,6 +395,8 @@ void field_list(void)
 {
 	prologue("field_list");
 	
+	push_tb();
+	
 	/* no else because fields can be empty; no need to error correct */
 	if(match_type(identifier))
 	{
@@ -544,11 +407,14 @@ void field_list(void)
 		*/
 		char case_after = 0;
 		
+		create_entry(get_tok(stay), idt_field);
 		expect_type(identifier);
 		
 		while(match_sym(","))
 		{
 			expect_sym(",");
+			
+			create_entry(get_tok(stay), idt_field);
 			expect_type(identifier);	
 		}
 		
@@ -568,11 +434,14 @@ void field_list(void)
 				break;
 			}
 			
+			create_entry(get_tok(stay), idt_field);
 			expect_type(identifier);
 		
 			while(match_sym(","))
 			{
 				expect_sym(",");
+				
+				create_entry(get_tok(stay), idt_field);
 				expect_type(identifier);	
 			}
 			
@@ -687,13 +556,15 @@ void field_list(void)
 		}
 	}
 	
+	pop_tb();
+	
 	epilogue();
 }
 
 void block(void)
 {
 	prologue("block");
-	
+
 	if(match_sym("label"))
 	{
 		expect_sym("label");
@@ -714,6 +585,7 @@ void block(void)
 		
 		do
 		{
+			create_entry(get_tok(stay), idt_const);
 			expect_type(identifier);
 			expect_sym("=");
 			constant();
@@ -727,6 +599,7 @@ void block(void)
 		
 		do
 		{
+			create_entry(get_tok(stay), idt_type);
 			expect_type(identifier);
 			expect_sym("=");
 			data_type();
@@ -740,11 +613,14 @@ void block(void)
 		
 		do
 		{
+			create_entry(get_tok(stay), idt_variable);
+			printf("TEST!\n");
 			expect_type(identifier);
 			
 			while(match_sym(","))
 			{
 				expect_sym(",");
+				create_entry(get_tok(stay), idt_variable);
 				expect_type(identifier);
 			}
 			
@@ -762,7 +638,7 @@ void block(void)
 		expect_sym(";");
 		
 		/* directive or block */
-		if(match_sym("forward")) expect_sym("forward");
+		if(match_sym("forward")) expect_sym("forward"), pop_tb();
 		else block();
 	
 		expect_sym(";");
@@ -775,6 +651,8 @@ void block(void)
 	
 	expect_sym("end");
 	
+	pop_tb();
+	
 	epilogue();
 }
 
@@ -782,18 +660,25 @@ void program(void)
 {
 	prologue("program");
 	
+	push_tb(); /* initial symbol table push */
+	
 	expect_sym("program");
+	
+	create_entry(get_tok(stay), idt_variable);
 	expect_type(identifier);
 	
 	if(match_sym("("))
 	{
 		expect_sym("(");
-		
+			
+		create_entry(get_tok(stay), idt_variable);
 		expect_type(identifier);
 		
 		while(match_sym(","))
 		{
 			expect_sym(",");
+			
+			create_entry(get_tok(stay), idt_variable);
 			expect_type(identifier);
 		}
 		
@@ -803,6 +688,8 @@ void program(void)
 	expect_sym(";");
 	block();
 	expect_sym(".");
+	
+	/* symbol table is popped off as apart of block */
 	
 	epilogue();
 }

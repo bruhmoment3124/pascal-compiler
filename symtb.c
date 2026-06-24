@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "token.h"
 #include "symtb.h"
 
 extern char symtb_trace;
@@ -39,13 +41,49 @@ void pop_tb(void)
     top = top->next;
 }
 
-void create_entry(char *sym, ident_type type)
+void create_entry(token tok, ident_type type)
 {
+	unsigned long int i;
+	for(i = top->num_of_entry; i >= 0 && top->entry != NULL; i--)
+	{
+		if(tok.length == top->entry[i].length)
+			if(strncmp(tok.sym, top->entry[i].sym, tok.length) == 0)
+				printf("TYPE ERROR! Redeclaration of ("), prt_sym(tok), printf(")\n"), exit(-1);
+		
+		if(!i) break;
+	}
+	
     top->num_of_entry++;
     top->entry = realloc(top->entry, top->num_of_entry * sizeof(entry));
-    top->entry[top->num_of_entry - 1].sym = sym;
+    top->entry[top->num_of_entry - 1].sym = tok.sym;
+    top->entry[top->num_of_entry - 1].length = tok.length;
     top->entry[top->num_of_entry - 1].type = type;
 }
+/*
+
+for later:
+
+int search_sym(char *sym)
+{
+	node *temp;
+	
+	for(temp = top; temp != NULL; temp = temp->next)
+	{
+		unsigned long int i;
+		for(i = temp->num_of_entry; i >= 0; i--)
+		{
+			if(strlen(sym) == strlen(temp->entry[i].sym))
+				if(strncmp(sym, temp->entry[i].sym, temp->entry[i].length) == 0)
+					return 1;
+				
+			if(!i) break;
+		}
+	}
+	
+	return 0;
+}
+
+*/
 
 void trace_symbols(void)
 {
@@ -75,12 +113,21 @@ void trace_symbols(void)
 						unsigned long int j;
 						for(j = 0; j < save[i]->num_of_entry; j++)
 						{
-							printf("\t(%s, ", save[i]->entry[j].sym);
+							unsigned long int k;
+							
+							printf("\t(");
+							for(k = 0; k < save[i]->entry[j].length; k++) printf("%c", save[i]->entry[j].sym[k]);
+							printf(", ");
+							
 
 							switch(save[i]->entry[j].type)
 							{
-								case var: printf("var)\n"); break;
-								case id_type: printf("id_type)\n"); break;
+								case idt_const: printf("idt_const)\n"); break;
+								case idt_type: printf("idt_type)\n"); break;
+								case idt_variable: printf("idt_variable)\n"); break;
+								case idt_field: printf("idt_field)\n"); break;
+								case idt_proc: printf("idt_proc)\n"); break;
+								case idt_func: printf("idt_func)\n"); break;
 							}
 						}
 					} else

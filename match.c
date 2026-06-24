@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "token.h"
 #include "match.h"
 #include "parser.h"
 
-extern char *file; /* the string that the file was converted into */
 extern char trace;
 
 /* 
@@ -58,18 +58,11 @@ int match_sym(char *sym)
 {
 	token temp = get_tok(stay);
 	
-	unsigned long int size, i, j;
-	
-	/* find size of sym */
-	for(size = 0; sym[size] != '\0'; size++);
-	
-	/* if the two symbols are not the same size, they cannot be the same */
-	if(temp.end - temp.start != size)
+	if(temp.length != strlen(sym))
 		return 0;
 	
-	/* verify that all characters in the two symbols are the same */
-	for(i = temp.start, j = 0; i < temp.end; i++, j++)
-		if(file[i] != sym[j]) return 0;
+	if(strncmp(temp.sym, sym, temp.length) != 0)
+		return 0;
 
 	return 1;
 }
@@ -86,10 +79,6 @@ int match_type(type t)
 /* like match_sym, but advances the input and throw a syntax error if sym is not in the input file  */
 void expect_sym(char *sym)
 {	
-	token temp = get_tok(advance);
-	
-	unsigned long int size, i, j;
-
 	if(trace)
 	{
 		unsigned long int i;
@@ -97,16 +86,10 @@ void expect_sym(char *sym)
 		printf("expect (%s)\n", sym);
 	}
 	
-	/* find size of sym */
-	for(size = 0; sym[size] != '\0'; size++);
+	if(!match_sym(sym))
+		syntax_error(sym, get_tok(stay));
 	
-	/* if the two symbols are not the same size, they cannot be the same */
-	if(temp.end - temp.start != size)
-		syntax_error(sym, temp);
-	
-	/* verify that all characters in the two symbols are the same */
-	for(i = temp.start, j = 0; i < temp.end; i++, j++)
-		if(file[i] != sym[j]) syntax_error(sym, temp);
+	get_tok(advance);
 }
 
 /* like expect_sym, but for symbol type */

@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	
 	if(trace) printf("trace output:\n\n");
 	
-	expression();
+	program();
 	expect_sym("~");
 	printf("\n");
 	

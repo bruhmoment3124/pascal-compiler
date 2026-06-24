@@ -13,7 +13,7 @@
 #define match_set(ch, set) (strchr(set, ch) != NULL)
 
 /* advance input */
-#define advance(pos) pos++
+#define advance(pos, length) pos++, length++
 
 extern char *file;
 
@@ -51,10 +51,11 @@ token get_tok(choice c)
 	while(match_set(file[pos], whitespace))
 	{
 		if(match_ch(file[pos], '\n')) lines++;
-		advance(pos);
+		pos++;
 	}
 	
-	temp_tok.start = pos;
+	temp_tok.sym = &file[pos];
+	temp_tok.length = 0;
 	temp_tok.lines = lines;
 	temp_tok.type = unknown;
 
@@ -65,8 +66,7 @@ token get_tok(choice c)
 		case '+': case '-': case '*': case '/':
 		case ',': case ';': case '=': case '^':
 		case '(': case ')': case '[': case ']': case '{': case '}':
-			advance(pos);
-			temp_tok.end = pos;
+			advance(pos, temp_tok.length);
 			
 			if(c == stay) pos = orig_pos;
 			
@@ -77,8 +77,7 @@ token get_tok(choice c)
 		/* end of file indicator, do not advance input */
 
 		case '~':
-			temp_tok.end = pos + 1; /* + 1 because input is not advanced */
-			
+			temp_tok.length++; /* ++ because no advance */
 			if(c == stay) pos = orig_pos;
 			
 			temp_tok.type = EOI;
@@ -88,12 +87,10 @@ token get_tok(choice c)
 		/* remove repetitions, if possible */
 		
 		case '.':
-			advance(pos);
+			advance(pos, temp_tok.length);
 		
 			if(match_ch(file[pos], '.'))
-				advance(pos);
-
-			temp_tok.end = pos;
+				advance(pos, temp_tok.length);
 			
 			if(c == stay) pos = orig_pos;
 			
@@ -102,12 +99,10 @@ token get_tok(choice c)
 		break;
 
 		case ':':
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 			if(match_ch(file[pos], '='))
-				advance(pos);
-
-			temp_tok.end = pos;
+				advance(pos, temp_tok.length);
 			
 			if(c == stay) pos = orig_pos;
 			
@@ -116,12 +111,10 @@ token get_tok(choice c)
 		break;
 
 		case '<':
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 			if(match_ch(file[pos], '>') || match_ch(file[pos], '='))
-				advance(pos);
-
-			temp_tok.end = pos;
+				advance(pos, temp_tok.length);
 			
 			if(c == stay) pos = orig_pos;
 			
@@ -130,12 +123,10 @@ token get_tok(choice c)
 		break;
 
 		case '>':
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 			if(match_ch(file[pos], '='))
-				advance(pos);
-
-			temp_tok.end = pos;
+				advance(pos, temp_tok.length);
 			
 			if(c == stay) pos = orig_pos;
 			
@@ -147,22 +138,20 @@ token get_tok(choice c)
 	/* if a string is found */
 	if(match_ch(file[pos], '\''))
 	{
-		advance(pos);
+		advance(pos, temp_tok.length);
 
 		while(1)
 		{
 			if(file[pos] == '\'' && file[pos + 1] == '\'')
 			{
-				advance(pos);
+				advance(pos, temp_tok.length);
 			} else if(file[pos] == '\'' && file[pos + 1] != '\'')
 				break;
 			
-			advance(pos);
+			advance(pos, temp_tok.length);
 		}
 		
-		advance(pos);
-
-		temp_tok.end = pos;
+		advance(pos, temp_tok.length);
 		
 		if(c == stay) pos = orig_pos;
 		
@@ -174,16 +163,16 @@ token get_tok(choice c)
 	if(isdigit(file[pos]))
 	{
 		while(isdigit(file[pos]))
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 		temp_tok.type = uint;
 
 		if(match_ch(file[pos], '.') && isdigit(file[pos + 1]))
 		{
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 			while(isdigit(file[pos]))
-				advance(pos);
+				advance(pos, temp_tok.length);
 			
 			if(isdigit(file[pos - 1])) temp_tok.type = unum;
 		}
@@ -193,13 +182,13 @@ token get_tok(choice c)
 		{
 			temp_tok.type = unknown;
 			
-			advance(pos);
+			advance(pos, temp_tok.length);
 
 			if(match_ch(file[pos], '+') || match_ch(file[pos], '-'))
-				advance(pos);
+				advance(pos, temp_tok.length);
 
 			while(isdigit(file[pos]))
-				advance(pos);
+				advance(pos, temp_tok.length);
 			
 			/* verify that the unsigned number is correctly formed */
 			if(isdigit(file[pos - 1])) temp_tok.type = unum;
@@ -211,23 +200,23 @@ token get_tok(choice c)
 	/* read until special_set symbol, or until whitespace */
 	while(!match_set(file[pos], whitespace) && !match_set(file[pos], special_set))
 	{
-		advance(pos);
+		advance(pos, temp_tok.length);
 		temp_tok.type = unknown;
 	}
-	
-	temp_tok.end = pos;
 	
 	/* find types not found during scanning */
 	
 	/* used to find an identifier, PROBABLY SHOULD REWORK */
 	{
 		char found = 1;
-		unsigned long int i = temp_tok.start;
-		if(!isalpha(file[i]))
+		char *i = temp_tok.sym;
+		unsigned long int j;
+		
+		if(!isalpha(*i))
 			found = 0;
 		
-		for(i = i + 1; i < temp_tok.end; i++)
-			if(!isalpha(file[i]) && !isdigit(file[i]))
+		for(j = 0; j < temp_tok.length; j++)
+			if(!isalpha(i[j]) && !isdigit(i[j]))
 				found = 0;
 		
 		if(found) temp_tok.type = identifier;
@@ -254,17 +243,17 @@ token get_tok(choice c)
 			unsigned long int word_length;
 			for(word_length = 0; word_symbols[i][word_length] != '\0'; word_length++);
 		
-			if(temp_tok.end - temp_tok.start == word_length)
+			if(temp_tok.length == word_length)
 			{
 				char found = 1;
 				
 				/* test if every character is equivalent, if not, found = 0 */
 				
-				/* may replace with filencmp */
+				/* may replace with strcmp */
 				
 				unsigned long int j, k;
-				for(j = 0, k = temp_tok.start; j < word_length; j++, k++)
-					if(word_symbols[i][j] != file[k]) found = 0;
+				for(j = 0, k = 0; j < word_length; j++, k++)
+					if(word_symbols[i][j] != temp_tok.sym[k]) found = 0;
 			
 				if(found) temp_tok.type = word;
 			}
@@ -277,10 +266,11 @@ token get_tok(choice c)
 }
 
 void prt_sym(token temp_tok)
-{
+{	
 	unsigned long int i;
-	for(i = temp_tok.start; i < temp_tok.end; i++)
-		printf("%c", file[i]);
+
+	for(i = 0; i < temp_tok.length; i++)
+		printf("%c", temp_tok.sym[i]);
 }
 
 void prt_type(token temp_tok)
