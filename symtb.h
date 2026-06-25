@@ -29,12 +29,6 @@ void pop_tb(void);
 
 void create_entry(token, ident_type);
 
-/*
-
-for later:
-
-int search_sym(char *);
-
-*/
+entry * search_sym(token);
 
 void trace_symbols(void);

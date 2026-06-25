@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "token.h"
+#include "symtb.h"
 #include "match.h"
 #include "parser.h"
-#include "symtb.h"
 
 char *file = NULL; /* string containing input symbols to scanner */
 char trace = 0; /* trace parsing? */

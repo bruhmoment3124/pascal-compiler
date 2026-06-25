@@ -59,31 +59,29 @@ void create_entry(token tok, ident_type type)
     top->entry[top->num_of_entry - 1].length = tok.length;
     top->entry[top->num_of_entry - 1].type = type;
 }
-/*
 
-for later:
-
-int search_sym(char *sym)
+/* search for first entry containing sym */
+entry * search_sym(token tok)
 {
 	node *temp;
-	
 	for(temp = top; temp != NULL; temp = temp->next)
 	{
-		unsigned long int i;
-		for(i = temp->num_of_entry; i >= 0; i--)
+		if(temp->entry != NULL)
 		{
-			if(strlen(sym) == strlen(temp->entry[i].sym))
-				if(strncmp(sym, temp->entry[i].sym, temp->entry[i].length) == 0)
-					return 1;
-				
-			if(!i) break;
+			unsigned long int i;
+			for(i = temp->num_of_entry - 1; i >= 0; i--)
+			{
+				if(tok.length == temp->entry[i].length)
+					if(strncmp(tok.sym, temp->entry[i].sym, temp->entry[i].length) == 0)
+						return &temp->entry[i];
+					
+				if(!i) break;
+			}
 		}
 	}
 	
-	return 0;
+	return NULL;
 }
-
-*/
 
 void trace_symbols(void)
 {

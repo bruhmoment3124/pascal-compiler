@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "token.h"
+#include "symtb.h"
 #include "match.h"
 #include "parser.h"
-#include "symtb.h"
 
 /*
 	Below is the recursive descent parser.
@@ -453,13 +453,14 @@ void field_list(void)
 		{
 			expect_sym("case");
 			
-			/* need to add distinction between identifier and type identifier */
-			expect_type(identifier);
-			
-			if(match_sym(":"))
+			if(match_idt(idt_type))
 			{
-				expect_sym(":");
+				expect_idt(idt_type);
+			} else
+			{
 				expect_type(identifier);
+				expect_sym(":");
+				expect_idt(idt_type);
 			}
 			
 			expect_sym("of");
@@ -506,13 +507,14 @@ void field_list(void)
 	{
 		expect_sym("case");
 		
-		/* need to add distinction between identifier and type identifier */
-		expect_type(identifier);
-		
-		if(match_sym(":"))
+		if(match_idt(idt_type))
 		{
-			expect_sym(":");
+			expect_idt(idt_type);
+		} else
+		{
 			expect_type(identifier);
+			expect_sym(":");
+			expect_idt(idt_type);
 		}
 		
 		expect_sym("of");
@@ -614,7 +616,6 @@ void block(void)
 		do
 		{
 			create_entry(get_tok(stay), idt_variable);
-			printf("TEST!\n");
 			expect_type(identifier);
 			
 			while(match_sym(","))

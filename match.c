@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "token.h"
+#include "symtb.h"
 #include "match.h"
 #include "parser.h"
 
@@ -76,6 +77,23 @@ int match_type(type t)
 	return 0;
 }
 
+/* match a specific identifier type in the input */
+int match_idt(ident_type t)
+{
+	token tok = get_tok(stay);
+	
+	if(match_type(identifier))
+	{
+		entry *temp_ent = search_sym(tok);
+		
+		if(temp_ent != NULL)
+			if(temp_ent->type == t)
+				return 1;
+	}
+
+	return 0;
+}
+
 /* like match_sym, but advances the input and throw a syntax error if sym is not in the input file  */
 void expect_sym(char *sym)
 {	
@@ -83,7 +101,7 @@ void expect_sym(char *sym)
 	{
 		unsigned long int i;
 		for(i = 0; i < indent; i++) printf("| ");	
-		printf("expect (%s)\n", sym);
+		printf("expect_sym (%s)\n", sym);
 	}
 	
 	if(!match_sym(sym))
@@ -102,13 +120,39 @@ void expect_type(type t)
 		unsigned long int i;
 		for(i = 0; i < indent; i++) printf("| ");
 
-		printf("expect (");
+		printf("expect_type (");
 		prt_type(temp);
 		printf(")\n");
 	}
 	
 	if(temp.type != t)
 		syntax_error("TYPE", temp);
+}
+
+void expect_idt(ident_type t)
+{
+	if(trace)
+	{
+		unsigned long int i;
+		for(i = 0; i < indent; i++) printf("| ");
+
+		printf("expect_idt (");
+		
+		switch(t)
+		{
+			case idt_const: printf("idt_const)\n"); break;
+			case idt_type: printf("idt_type)\n"); break;
+			case idt_variable: printf("idt_variable)\n"); break;
+			case idt_field: printf("idt_field)\n"); break;
+			case idt_proc: printf("idt_proc)\n"); break;
+			case idt_func: printf("idt_func)\n"); break;
+		}
+	}
+	
+	if(!match_idt(t))
+		syntax_error("idt", get_tok(stay));
+	
+	get_tok(advance);
 }
 
 /* used in the case a match is found */
