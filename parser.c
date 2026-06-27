@@ -14,33 +14,25 @@ void constant(void)
 {
 	prologue("constant");
 	
-	if(match_sym("+") || 
-	   match_sym("-") ||
-	   match_type(identifier) || 
-	   match_type(unum) || 
-	   match_type(uint))
+	if(match_idt(idt_const))
+	{
+		expect_idt(idt_const);
+	} else if(match_sym("+")   || 
+			  match_sym("-")   ||
+			  match_type(unum) || 
+			  match_type(uint))
 	{
 		if(match_sym("+") || match_sym("-"))
 			advance_sym();
-			
-		if(match_type(identifier) || 
-		   match_type(unum) || 
-	       match_type(uint))
-		{
-			expect_type(get_tok(stay).type);
-		} else
-		{
-			/* replace with standard syntax error function */
-			printf("ERROR!\n");
-			exit(-1);
-		}
+		
+		advance_sym();
 	} else if(match_type(string))
 	{
 		advance_sym();
 	} else
 	{
 		/* replace with standard syntax error function */
-		printf("ERROR!\n");
+		printf("ERROR! Expected constant identifier or unsigned number.\n");
 		exit(-1);
 	}
 	
@@ -57,9 +49,7 @@ void index_type_spec(void)
 	create_entry(get_tok(stay), idt_variable);
 	expect_type(identifier);
 	expect_sym(":");
-	
-	/* type identifier */
-	expect_type(identifier);
+	expect_idt(idt_type);
 	
 	epilogue();
 }
@@ -76,9 +66,7 @@ void conformant_arr(void)
 		index_type_spec();
 		expect_sym("]");
 		expect_sym("of");
-		
-		/* type identifier */
-		expect_type(identifier);
+		expect_idt(idt_type);
 	} else if(match_sym("array"))
 	{
 		expect_sym("array");
@@ -98,9 +86,9 @@ void conformant_arr(void)
 		if(match_sym("packed") || match_sym("array"))
 		{
 			conformant_arr(); /* recursion here because it's easier */
-		} else if(match_type(identifier))
+		} else if(match_idt(idt_type))
 		{
-			expect_type(identifier);
+			expect_idt(idt_type);
 		} else
 		{
 			/* replace with standard syntax error function */
@@ -112,83 +100,15 @@ void conformant_arr(void)
 	epilogue();
 }
 
-/* THIS IS ALMOST DONE, WAY TO VERBOSE, HOWEVER */
+/* CLOSER TO DONE, STILL NEED TO VERIFY */
 void formal_param_list(void)
 {
 	prologue("formal_param_list");
 	
 	expect_sym("(");
 	
-	if(match_sym("var"))
+	do
 	{
-		expect_sym("var");
-		
-		create_entry(get_tok(stay), idt_variable);
-		expect_type(identifier);
-		
-		while(match_sym(","))
-		{
-			expect_sym(",");		
-			
-			create_entry(get_tok(stay), idt_variable);
-			expect_type(identifier);
-		}
-		
-		expect_sym(":");
-		
-		if(match_type(identifier))
-		{
-			expect_type(identifier);
-		} else if(match_sym("packed") || match_sym("array"))
-		{
-			conformant_arr();
-		} else
-		{
-			/* replace with standard syntax error function */
-			printf("ERROR!\n");
-			exit(-1);
-		}
-	} else if(match_type(identifier))
-	{
-		create_entry(get_tok(stay), idt_variable);
-		expect_type(identifier);
-		
-		while(match_sym(","))
-		{
-			expect_sym(",");
-			
-			create_entry(get_tok(stay), idt_variable);
-			expect_type(identifier);
-		}
-		
-		expect_sym(":");
-		
-		if(match_type(identifier))
-		{
-			expect_type(identifier);
-		} else if(match_sym("packed") || match_sym("array"))
-		{
-			conformant_arr();
-		} else
-		{
-			/* replace with standard syntax error function */
-			printf("ERROR!\n");
-			exit(-1);
-		}
-	} else if(match_sym("procedure") || match_sym("function"))
-	{
-		proc_or_func_head();
-	} else
-	{
-		/* replace with standard syntax error function */
-		printf("ERROR!\n");
-		exit(-1);
-	}
-	
-	while(match_sym(";"))
-	{
-		expect_sym(";");
-		
 		if(match_sym("var"))
 		{
 			expect_sym("var");
@@ -198,7 +118,7 @@ void formal_param_list(void)
 			
 			while(match_sym(","))
 			{
-				expect_sym(",");
+				expect_sym(",");		
 				
 				create_entry(get_tok(stay), idt_variable);
 				expect_type(identifier);
@@ -206,9 +126,9 @@ void formal_param_list(void)
 			
 			expect_sym(":");
 			
-			if(match_type(identifier))
+			if(match_idt(idt_type))
 			{
-				expect_type(identifier);
+				expect_idt(idt_type);
 			} else if(match_sym("packed") || match_sym("array"))
 			{
 				conformant_arr();
@@ -233,9 +153,9 @@ void formal_param_list(void)
 			
 			expect_sym(":");
 			
-			if(match_type(identifier))
+			if(match_idt(idt_type))
 			{
-				expect_type(identifier);
+				expect_idt(idt_type);
 			} else if(match_sym("packed") || match_sym("array"))
 			{
 				conformant_arr();
@@ -254,7 +174,12 @@ void formal_param_list(void)
 			printf("ERROR!\n");
 			exit(-1);
 		}
-	}
+		
+		if(match_sym(";"))
+			expect_sym(";");
+		
+		/* while condition is the first set after the left parentheses */
+	} while(match_sym("var") || match_type(identifier) || match_sym("procedure") || match_sym("function"));
 	
 	expect_sym(")");
 	
@@ -292,7 +217,7 @@ void proc_or_func_head(void)
 		if(match_sym(":"))
 		{
 			expect_sym(":");
-			expect_type(identifier);
+			expect_idt(idt_type);
 		}
 	} else
 	{
@@ -309,9 +234,9 @@ void ordinal_type(void)
 {
 	prologue("ordinal_type");
 	
-	if(match_type(identifier))
+	if(match_idt(idt_type))
 	{
-		expect_type(get_tok(stay).type);
+		expect_idt(idt_type);
 	} else if(match_sym("("))
 	{
 		expect_sym("(");
@@ -341,7 +266,7 @@ void data_type(void)
 	if(match_sym("^"))
 	{
 		expect_sym("^");
-		expect_type(identifier);
+		expect_idt(idt_type);
 	} else if(match_sym("packed") ||
 			  match_sym("array") ||
 			  match_sym("file") ||
@@ -391,6 +316,7 @@ void data_type(void)
 	epilogue();
 }
 
+/* WAY, WAY TO VERBOSE */
 void field_list(void)
 {
 	prologue("field_list");
@@ -684,6 +610,19 @@ void program(void)
 		}
 		
 		expect_sym(")");
+	}
+	
+	/* predeclaring boolean, integer, and char as needed in Pascal */
+	
+	/* only defining sym and length, because that's all that's needed for create_entry */
+	{
+		token boolean = {"boolean", 7},
+			  integer = {"integer", 7}, 
+			  character = {"char", 4};
+		
+		create_entry(boolean, idt_type);
+		create_entry(integer, idt_type);
+		create_entry(character, idt_type);
 	}
 	
 	expect_sym(";");
