@@ -103,12 +103,19 @@ void conformant_arr(void)
 /* CLOSER TO DONE, STILL NEED TO VERIFY */
 void formal_param_list(void)
 {
+	char first = 1; /* test for first iteration of the loop, important to reduce size */
+	
 	prologue("formal_param_list");
 	
 	expect_sym("(");
 	
 	do
 	{
+		/* only expect semicolon at the beginning of subsequent iterations, not the first */
+		if(!first)
+			expect_sym(";");
+		first = 0;
+		
 		if(match_sym("var"))
 		{
 			expect_sym("var");
@@ -175,11 +182,8 @@ void formal_param_list(void)
 			exit(-1);
 		}
 		
-		if(match_sym(";"))
-			expect_sym(";");
-		
-		/* while condition is the first set after the left parentheses */
-	} while(match_sym("var") || match_type(identifier) || match_sym("procedure") || match_sym("function"));
+		/* while condition is the follow set of the inside of the parentheses */
+	} while(!match_sym(")"));
 	
 	expect_sym(")");
 	
@@ -316,120 +320,38 @@ void data_type(void)
 	epilogue();
 }
 
-/* WAY, WAY TO VERBOSE */
+/* field list is WAY better now, still have got to test it more, though */
 void field_list(void)
 {
 	prologue("field_list");
 	
 	push_tb();
 	
-	/* no else because fields can be empty; no need to error correct */
 	if(match_type(identifier))
-	{
-		/* 
-			this variable is a little weird, but exists to properly parse field list;
-			basically, case must be preceded by a semicolon, ONLY IF, previous identifier have been declared.
-			There is probably a better way to do this, but idk.
-		*/
-		char case_after = 0;
-		
-		create_entry(get_tok(stay), idt_field);
-		expect_type(identifier);
-		
-		while(match_sym(","))
+	{	
+		do
 		{
-			expect_sym(",");
-			
-			create_entry(get_tok(stay), idt_field);
-			expect_type(identifier);	
-		}
-		
-		expect_sym(":");
-		data_type();
-		
-		while(match_sym(";"))
-		{
-			expect_sym(";");
-			
-			/* end or ) or case must follow */
-			if(match_sym("end") || match_sym(")")) break;
-			
-			if(match_sym("case"))
-			{
-				case_after = 1;
-				break;
-			}
-			
 			create_entry(get_tok(stay), idt_field);
 			expect_type(identifier);
-		
+			
 			while(match_sym(","))
 			{
 				expect_sym(",");
-				
 				create_entry(get_tok(stay), idt_field);
-				expect_type(identifier);	
+				expect_type(identifier);
 			}
 			
 			expect_sym(":");
 			data_type();
-		}
-		
-		if(case_after)
-		{
-			expect_sym("case");
 			
-			if(match_idt(idt_type))
-			{
-				expect_idt(idt_type);
-			} else
-			{
-				expect_type(identifier);
-				expect_sym(":");
-				expect_idt(idt_type);
-			}
+			/* follow set of field_list */
+			if(match_sym("end") || match_sym(")")) break;
 			
-			expect_sym("of");
-			
-			/* first instance, must repeat below */
-			
-			constant();
-			while(match_sym(","))
-			{
-				expect_sym(",");
-				constant();
-			}
-			
-			expect_sym(":");
-			expect_sym("(");
-			field_list();
-			expect_sym(")");
-			
-			/* second instance */
-			
-			while(match_sym(";"))
-			{	
-				expect_sym(";");
-
-				/* end or ) must follow a field list */
-				if(match_sym("end") || match_sym(")")) break;
-			
-				/* need to add distinction between identifier and type identifier */
-				
-				constant();
-				while(match_sym(","))
-				{
-					expect_sym(",");
-					constant();
-				}
-				
-				expect_sym(":");
-				expect_sym("(");
-				field_list();
-				expect_sym(")");
-			}
-		}
-	} else if(match_sym("case"))
+			expect_sym(";");
+		} while(match_type(identifier));
+	}
+	
+	if(match_sym("case"))
 	{
 		expect_sym("case");
 		
@@ -445,31 +367,8 @@ void field_list(void)
 		
 		expect_sym("of");
 		
-		/* first instance, must repeat below */
-		
-		constant();
-		while(match_sym(","))
+		do
 		{
-			expect_sym(",");
-			constant();
-		}
-		
-		expect_sym(":");
-		expect_sym("(");
-		field_list();
-		expect_sym(")");
-		
-		/* second instance */
-		
-		while(match_sym(";"))
-		{	
-			expect_sym(";");
-
-			/* end or ) must follow a field list */
-			if(match_sym("end") || match_sym(")")) break;
-		
-			/* need to add distinction between identifier and type identifier */
-			
 			constant();
 			while(match_sym(","))
 			{
@@ -481,7 +380,17 @@ void field_list(void)
 			expect_sym("(");
 			field_list();
 			expect_sym(")");
-		}
+			
+			/* follow set of field_list */
+			if(match_sym("end") || match_sym(")")) break;
+			
+			expect_sym(";");
+		} while(match_idt(idt_const) || 
+				match_sym("+")   	 || 
+				match_sym("-")   	 ||
+				match_type(unum) 	 || 
+				match_type(uint)	 ||
+				match_type(string));
 	}
 	
 	pop_tb();
