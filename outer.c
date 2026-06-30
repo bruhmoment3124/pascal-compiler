@@ -3,13 +3,12 @@
 #include "token.h"
 #include "symtb.h"
 #include "match.h"
-#include "parser.h"
+#include "outer.h"
 
 /*
 	Below is the recursive descent parser.
 */
 
-/* NOT FINISHED */
 void constant(void)
 {
 	prologue("constant");
@@ -190,7 +189,6 @@ void formal_param_list(void)
 	epilogue();
 }
 
-/* UNFINISHED */
 void proc_or_func_head(void)
 {
 	prologue("proc_or_func_head");
@@ -233,7 +231,6 @@ void proc_or_func_head(void)
 	epilogue();
 }
 
-/* ALMOST DONE, NEED TO VERIFY TYPE OF IDENTIFIER */
 void ordinal_type(void)
 {
 	prologue("ordinal_type");
@@ -385,6 +382,8 @@ void field_list(void)
 			if(match_sym("end") || match_sym(")")) break;
 			
 			expect_sym(";");
+			
+		/* while "constant" */
 		} while(match_idt(idt_const) || 
 				match_sym("+")   	 || 
 				match_sym("-")   	 ||
@@ -432,16 +431,53 @@ void block(void)
 	
 	if(match_sym("type"))
 	{
+		token *pt_type_list = NULL;
+		unsigned long int list_length = 0;
+		
 		expect_sym("type");
 		
 		do
 		{
-			create_entry(get_tok(stay), idt_type);
+			/* saving identifier for later create_entry */
+			token temp = get_tok(stay);
+			
 			expect_type(identifier);
 			expect_sym("=");
-			data_type();
+			
+			/* distinction here because pointers can be used before declaration */
+			if(match_sym("^"))
+			{
+				expect_sym("^");
+				
+				/* allocate space for token */
+				list_length++;
+				pt_type_list = realloc(pt_type_list, list_length * sizeof(token));
+				pt_type_list[list_length - 1] = get_tok(stay);
+				
+				expect_type(identifier);
+			} else
+			{
+				data_type();
+			}
+			
 			expect_sym(";");
+		
+			/* create entry here so you can't define type as itself */
+			create_entry(temp, idt_type);
 		} while(match_type(identifier));
+		
+		/* verify that the symbol used in a pointer type definition has been declared  */
+		{
+			unsigned long int i;
+			for(i = 0; i < list_length; i++)
+			{
+				if(!search_sym(pt_type_list[i]))
+					printf("ERROR! Pointer type identifier not resolved.\n"),
+					exit(-1);
+			}
+		}
+		
+		free(pt_type_list);
 	}
 	
 	if(match_sym("var"))

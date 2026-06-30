@@ -4,7 +4,6 @@
 #include "token.h"
 #include "symtb.h"
 #include "match.h"
-#include "parser.h"
 
 extern char trace;
 
