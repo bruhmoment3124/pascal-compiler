@@ -5,6 +5,7 @@ typedef enum
 	idt_type,
 	idt_variable,
 	idt_field,
+	idt_bound,
 	idt_proc,
 	idt_func
 } ident_type;

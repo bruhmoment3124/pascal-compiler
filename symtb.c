@@ -124,6 +124,7 @@ void trace_symbols(void)
 								case idt_type: printf("idt_type)\n"); break;
 								case idt_variable: printf("idt_variable)\n"); break;
 								case idt_field: printf("idt_field)\n"); break;
+								case idt_bound: printf("idt_bound)\n"); break;
 								case idt_proc: printf("idt_proc)\n"); break;
 								case idt_func: printf("idt_func)\n"); break;
 							}

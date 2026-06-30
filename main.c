@@ -5,6 +5,7 @@
 #include "symtb.h"
 #include "match.h"
 #include "outer.h"
+#include "inner.h"
 
 char *file = NULL; /* string containing input symbols to scanner */
 char trace = 0; /* trace parsing? */

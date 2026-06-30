@@ -4,6 +4,7 @@
 #include "symtb.h"
 #include "match.h"
 #include "outer.h"
+#include "inner.h"
 
 /*
 	Below is the recursive descent parser.
@@ -42,10 +43,10 @@ void index_type_spec(void)
 {
 	prologue("index_type_spec");
 	
-	create_entry(get_tok(stay), idt_variable);
+	create_entry(get_tok(stay), idt_bound);
 	expect_type(identifier);
 	expect_sym("..");
-	create_entry(get_tok(stay), idt_variable);
+	create_entry(get_tok(stay), idt_bound);
 	expect_type(identifier);
 	expect_sym(":");
 	expect_idt(idt_type);
@@ -181,7 +182,7 @@ void formal_param_list(void)
 			exit(-1);
 		}
 		
-		/* while condition is the follow set of the inside of the parentheses */
+	/* while condition is the follow set of the inside of the parentheses */
 	} while(!match_sym(")"));
 	
 	expect_sym(")");
@@ -518,8 +519,12 @@ void block(void)
 	
 	expect_sym("begin");
 	
-	/* statement  */
-	/* while ; statement */
+	statement();
+	while(match_sym(";"))
+	{
+		expect_sym(";");
+		statement();
+	}
 	
 	expect_sym("end");
 	
@@ -574,7 +579,7 @@ void program(void)
 	block();
 	expect_sym(".");
 	
-	/* symbol table is popped off as apart of block */
+	/* symbol table is popped off as a part of block */
 	
 	epilogue();
 }
