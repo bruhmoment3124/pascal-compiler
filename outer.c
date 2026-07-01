@@ -243,10 +243,14 @@ void ordinal_type(void)
 	{
 		expect_sym("(");
 		
+		create_entry(get_tok(stay), idt_const);
 		expect_type(identifier);
+		
 		while(match_sym(","))
 		{
-			expect_sym(",");
+			expect_sym(",");	
+			
+			create_entry(get_tok(stay), idt_const);
 			expect_type(identifier);
 		}
 		
@@ -562,17 +566,25 @@ void program(void)
 		expect_sym(")");
 	}
 	
-	/* predeclaring boolean, integer, and char as needed in Pascal */
+	/* predeclaring a number of identifier as needed in Pascal */
 	
 	/* only defining sym and length, because that's all that's needed for create_entry */
 	{
 		token boolean = {"boolean", 7},
+			  real = {"real", 4},
 			  integer = {"integer", 7}, 
-			  character = {"char", 4};
+			  character = {"char", 4},
+			  true = {"true", 4},
+			  false = {"false", 5};
 		
 		create_entry(boolean, idt_type);
+		create_entry(real, idt_type);
 		create_entry(integer, idt_type);
 		create_entry(character, idt_type);
+		
+		/* technically a part of a enum */
+		create_entry(true, idt_const);
+		create_entry(false, idt_const);
 	}
 	
 	expect_sym(";");

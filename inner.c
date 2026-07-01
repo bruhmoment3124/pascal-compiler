@@ -30,7 +30,14 @@ void variable(void)
 {
 	prologue("variable");
 	
-	expect_type(identifier);
+	if(match_idt(idt_variable) || match_idt(idt_field))
+	{
+		expect_type(identifier);
+	} else
+	{
+		printf("ERROR! Expected variable or field identifier.\n");
+		exit(-1);
+	}
 	
 	while(match_sym("[") || match_sym(".") || match_sym("^"))
 	{
@@ -39,7 +46,6 @@ void variable(void)
 			expect_sym("[");
 			
 			expression();
-			
 			while(match_sym(","))
 			{
 				expect_sym(",");
@@ -195,15 +201,30 @@ void expression(void)
 	epilogue();
 }
 
-/* both param lists need to be implemented */
-
+/* 
+	Pretty well done, just need to add procedure identifiers.
+	The implementation differs somewhat from the specification, in that
+	function identifiers are handled in factor to keep LL(1).
+*/
 void actual_param_list(void)
 {
 	prologue("actual_param_list");
 	
+	expect_sym("(");
+	
+	expression();
+	while(match_sym(","))
+	{
+		expect_sym(",");
+		expression();
+	}
+	
+	expect_sym(")");
+	
 	epilogue();
 }
 
+/* will implement later; write is a SPECIFIC procedure, so this only works with the write identifier */
 void write_param_list(void)
 {
 	prologue("write_param_list");
@@ -215,7 +236,23 @@ void statement(void)
 {
 	prologue("statement");
 	
-	if(match_sym("begin"))
+	if(match_idt(idt_variable) || match_idt(idt_field))
+	{
+		variable();
+		expect_sym(":=");
+		expression();
+	} else if(match_idt(idt_func))
+	{
+		expect_idt(idt_func);
+		expect_sym(":=");
+		expression();
+	} else if(match_idt(idt_proc))
+	{
+		expect_idt(idt_proc);
+		
+		if(match_sym("("))
+			actual_param_list();
+	} else if(match_sym("begin"))
 	{
 		expect_sym("begin");
 	
@@ -232,10 +269,7 @@ void statement(void)
 	} else if(match_sym("if"))
 	{
 		expect_sym("if");
-		
-		/* expression */
-		expect_sym("e");
-		
+		expression();
 		expect_sym("then");
 		statement();
 		
@@ -247,10 +281,7 @@ void statement(void)
 	} else if(match_sym("case"))
 	{
 		expect_sym("case");
-		
-		/* expression */
-		expect_sym("e");
-		
+		expression();
 		expect_sym("of");
 		
 		do
@@ -284,10 +315,7 @@ void statement(void)
 	} else if(match_sym("while"))
 	{
 		expect_sym("while");
-		
-		/* expression */
-		expect_sym("e");
-		
+		expression();
 		expect_sym("do");
 		statement();
 	} else if(match_sym("repeat"))
@@ -302,20 +330,13 @@ void statement(void)
 		}
 		
 		expect_sym("until");
-		
-		/* expression */
-		expect_sym("e");
+		expression();
 	} else if(match_sym("for"))
 	{
 		expect_sym("for");
-		
-		/* variable identifier */
-		expect_sym("v");
-		
+		expect_idt(idt_variable);
 		expect_sym(":=");
-		
-		/* expression */
-		expect_sym("e");
+		expression();
 		
 		if(match_sym("downto") || match_sym("to"))
 			advance_sym();
@@ -325,8 +346,7 @@ void statement(void)
 			exit(-1);
 		}
 		
-		/* expression */
-		expect_sym("e");
+		expression();
 		
 		expect_sym("do");
 		statement();
@@ -334,15 +354,11 @@ void statement(void)
 	{
 		expect_sym("with");
 		
-		/* variable */
-		expect_sym("v");
-		
+		variable();
 		while(match_sym(","))
 		{
 			expect_sym(",");
-				
-			/* variable */
-			expect_sym("v");
+			variable();
 		}
 		
 		expect_sym("do");
